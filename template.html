@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="%%CSP%%">
+<meta name="referrer" content="strict-origin">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0a0702">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="IT-WORLD Routen">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>IT-WORLD Routenplaner</title>
+<style>%%CSS%%</style>
+</head>
+<body>
+<canvas id="dust" aria-hidden="true"></canvas>
+
+<header class="top">
+  <div class="brand">
+    <img class="brand-globe" src="%%GLOBE%%" alt="" width="64" height="45">
+    <div class="brand-text"><b class="gold">IT-WORLD</b><small>Routenplaner</small></div>
+  </div>
+  <nav class="top-actions" aria-label="Schnellzugriff">
+    <button class="chip" id="btnConn" type="button" aria-live="polite"><span class="dot"></span><span id="connText">Prüfe Verbindung…</span></button>
+    <button class="btn btn-sm" id="btnInstall" type="button">📲 Installieren</button>
+    <button class="btn btn-sm btn-dark" id="btnMusic" type="button" title="Hintergrundmusik laden (MP3)">♪</button>
+    <button class="btn btn-sm btn-dark" id="btnHelp" type="button">Hilfe</button>
+    <button class="btn btn-sm btn-dark" id="btnPrivacy" type="button">Datenschutz</button>
+  </nav>
+</header>
+
+<div id="banner" class="banner hidden" role="status">
+  <span id="bannerText">Dein Empfang scheint schwach zu sein.</span>
+  <button class="btn btn-sm" id="bannerHelp" type="button">Hilfe anzeigen</button>
+  <button class="btn btn-sm btn-dark" id="bannerClose" type="button" aria-label="Schließen">✕</button>
+</div>
+
+<section class="hero">
+  <div class="logo3d" id="logo3d"><img src="%%LOGO%%" alt="IT-WORLD – IT Solutions" width="420" height="420"></div>
+  <h1><span class="gold">Dein Routenplaner</span></h1>
+  <p class="lead">Bis zu 60 Ziele eintragen, die beste Reihenfolge berechnen lassen und jeden Stopp einzeln ansteuern – per Adresse, per Standort oder per Foto.</p>
+</section>
+
+<main class="grid">
+  <div class="col">
+    <section class="card" aria-labelledby="h-start">
+      <h2 id="h-start"><span class="num">1</span> Startpunkt</h2>
+      <div class="row">
+        <input id="startInput" type="text" maxlength="240" placeholder="Adresse oder Koordinaten (z. B. 48,7758 9,1829)" autocomplete="off" aria-label="Startpunkt">
+        <button class="btn" id="btnStartSet" type="button">Setzen</button>
+      </div>
+      <div class="row wrap">
+        <button class="btn btn-dark btn-sm" id="btnLocate" type="button">📍 Meinen Standort verwenden</button>
+        <button class="btn btn-dark btn-sm" id="btnPhoto" type="button">📷 Per Foto planen</button>
+      </div>
+      <p class="hint" id="startInfo">Noch kein Startpunkt gesetzt.</p>
+    </section>
+
+    <section class="card" aria-labelledby="h-stops">
+      <h2 id="h-stops"><span class="num">2</span> Ziele <span class="count" id="stopCount">0</span></h2>
+      <div class="row">
+        <input id="stopInput" type="text" maxlength="240" placeholder="Ziel hinzufügen – Enter drücken" autocomplete="off" aria-label="Neues Ziel">
+        <button class="btn" id="btnAdd" type="button">+</button>
+      </div>
+      <details class="bulk">
+        <summary>Viele Ziele auf einmal einfügen</summary>
+        <textarea id="bulkInput" rows="5" maxlength="20000" placeholder="Ein Ziel pro Zeile.&#10;Optional mit Namen: Kunde Müller; Hauptstraße 5, Esslingen"></textarea>
+        <button class="btn btn-sm" id="btnBulk" type="button">Zur Liste hinzufügen</button>
+      </details>
+      <ul id="stopList" class="stops"></ul>
+      <p class="hint hidden" id="emptyHint">Noch keine Ziele – trag oben das erste ein oder wähle einen Favoriten.</p>
+      <div class="row wrap actions">
+        <label class="switch"><input type="checkbox" id="optRound" checked><span class="sw"></span><span>Zurück zum Start</span></label>
+        <label class="mini">Abfahrt <input type="time" id="optTime" value="08:00" aria-label="Abfahrtszeit"></label>
+        <label class="mini">Aufenthalt <input type="number" id="optDwell" min="0" max="600" value="5" aria-label="Minuten pro Stopp"> Min.</label>
+      </div>
+      <div class="row wrap">
+        <button class="btn btn-big" id="btnOptimize" type="button" title="Nächstes Ziel zuerst, weitester Weg zuletzt">📏 Nach Entfernung sortieren (nah → fern)</button>
+        <button class="btn btn-dark" id="btnDist" type="button" title="Kürzeste Gesamtstrecke der Rundtour (Reihenfolge kann vom nächsten Ziel abweichen)">✨ Kürzeste Gesamtstrecke</button>
+      </div>
+      <div class="row wrap">
+        <button class="btn btn-dark btn-sm" id="btnRecalc" type="button">Route in dieser Reihenfolge</button>
+        <button class="btn btn-dark btn-sm" id="btnSaveAsFav" type="button">★ Liste als Favorit speichern</button>
+        <button class="btn btn-dark btn-sm" id="btnClear" type="button">Liste leeren</button>
+      </div>
+      <p class="hint" id="calcStatus" role="status"></p>
+    </section>
+
+    <section class="card" aria-labelledby="h-fav">
+      <h2 id="h-fav"><span class="num">★</span> Favoriten</h2>
+      <div class="tabs" role="tablist">
+        <button class="tab active" id="tabFavStops" role="tab" type="button" aria-selected="true">Einzelne Ziele <span class="count" id="favStopCount">0</span></button>
+        <button class="tab" id="tabFavLists" role="tab" type="button" aria-selected="false">Komplette Listen <span class="count" id="favListCount">0</span></button>
+      </div>
+      <div id="panelFavStops">
+        <ul id="favStopList" class="favs"></ul>
+        <p class="hint hidden" id="favStopEmpty">Tippe bei einem Ziel auf ★, dann landet es hier.</p>
+      </div>
+      <div id="panelFavLists" class="hidden">
+        <div class="row">
+          <input id="favListName" type="text" maxlength="80" placeholder="Name der Liste, z. B. Montagstour" aria-label="Listenname">
+          <button class="btn" id="btnSaveList" type="button">Speichern</button>
+        </div>
+        <ul id="favListList" class="favs"></ul>
+        <p class="hint hidden" id="favListEmpty">Noch keine Liste gespeichert. Gib oben einen Namen ein.</p>
+      </div>
+      <div class="row wrap backup">
+        <button class="btn btn-dark btn-sm" id="btnExport" type="button">Sicherung (Datei)</button>
+        <button class="btn btn-dark btn-sm" id="btnExportEnc" type="button">🔒 Verschlüsselt</button>
+        <button class="btn btn-dark btn-sm" id="btnImport" type="button">Sicherung laden</button>
+        <input type="file" id="importFile" accept=".json,application/json" class="hidden" aria-label="Sicherung wählen">
+      </div>
+    </section>
+  </div>
+
+  <div class="col">
+    <section class="card map-card" aria-label="Karte">
+      <div class="map-wrap" id="mapWrap">
+        <canvas id="map" tabindex="0" aria-label="Routenkarte"></canvas>
+        <div class="map-ctl">
+          <button class="btn btn-sm btn-dark" id="zIn" type="button" aria-label="Hineinzoomen">+</button>
+          <button class="btn btn-sm btn-dark" id="zOut" type="button" aria-label="Herauszoomen">−</button>
+          <button class="btn btn-sm btn-dark" id="zFit" type="button" aria-label="Alles anzeigen">⤢</button>
+        </div>
+        <div class="map-attr" id="mapAttr"></div>
+        <div class="map-note hidden" id="mapNote"></div>
+      </div>
+      <div class="row wrap map-off">
+        <button class="btn btn-dark btn-sm" id="btnOffMap" type="button">🗺 Karte für die Tour offline speichern</button>
+        <button class="btn btn-dark btn-sm" id="btnOffClear" type="button">Gespeicherte Karte löschen</button>
+      </div>
+      <p class="hint" id="offMapInfo"></p>
+    </section>
+
+    <section class="card" aria-labelledby="h-sum">
+      <h2 id="h-sum"><span class="num">3</span> Deine Route</h2>
+      <div id="summary" class="summary"><p class="hint">Sobald du eine Route berechnet hast, siehst du hier Strecke, Fahrzeit und Ankunftszeiten.</p></div>
+      <div class="row wrap" id="exportRow">
+        <button class="btn btn-dark btn-sm" id="btnCopy" type="button">Als Text kopieren</button>
+        <button class="btn btn-dark btn-sm" id="btnTxt" type="button">Als Datei speichern</button>
+        <button class="btn btn-dark btn-sm" id="btnPrint" type="button">Drucken / PDF</button>
+      </div>
+    </section>
+
+    <section class="card tour-card" aria-labelledby="h-tour">
+      <h2 id="h-tour"><span class="num">▶</span> Live-Tour</h2>
+      <div id="tourBox" class="tour-box"></div>
+    </section>
+
+    <section class="card" aria-labelledby="h-stage">
+      <h2 id="h-stage"><span class="num">4</span> Navigation</h2>
+      <p class="hint">Jeder Stopp lässt sich einzeln öffnen. Für die ganze Tour gibt es Etappen mit je bis zu 10 Zielen – so passen sie in Google Maps.</p>
+      <div id="stages" class="stages"></div>
+    </section>
+  </div>
+</main>
+
+<footer class="foot">
+  <div class="foot-logo gold">IT-WORLD</div>
+  <div class="foot-links">
+    <button type="button" class="link" id="fPrivacy">Datenschutz</button>
+    <button type="button" class="link" id="fLicense">Lizenzen &amp; Copyright</button>
+    <button type="button" class="link" id="fHelp">Hilfe</button>
+    <button type="button" class="link" id="fConsent">Einwilligungen ändern</button>
+  </div>
+  <p class="copy" id="verLine">Version – · Werbefrei · Updates laufen im Hintergrund</p>
+  <p class="copy hidden" id="updNote">Ein Update wurde im Hintergrund geladen und ist beim nächsten Start aktiv.</p>
+  <p class="copy">© <span id="yr">2026</span> IT-WORLD – IT Solutions. Alle Rechte vorbehalten. Kartendaten © OpenStreetMap-Mitwirkende.</p>
+</footer>
+
+<input type="file" id="photoFile" accept="image/*" capture="environment" class="hidden" aria-label="Foto aufnehmen oder wählen">
+<input type="file" id="musicFile" accept="audio/*" class="hidden" aria-label="Musikdatei wählen">
+<div id="dock" class="dock hidden" role="region" aria-label="Weiterfahrt"></div>
+<div id="modalRoot"></div>
+<div id="toasts" aria-live="polite"></div>
+
+<script>%%JS%%</script>
+</body>
+</html>
